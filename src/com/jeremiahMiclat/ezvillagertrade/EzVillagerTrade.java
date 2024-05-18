@@ -39,11 +39,6 @@ public class EzVillagerTrade extends JavaPlugin implements Listener {
     public void onInventoryClick(TradeSelectEvent event) {
         int itemindex = event.getIndex();
         Merchant merchant = event.getMerchant();
-        Villager villager = (Villager) event.getMerchant();
-        if (villager.getVillagerLevel() < 5) {
-            return;
-        }
-
         MerchantInventory merchantInventory = event.getInventory();
         MerchantRecipe recipe = merchant.getRecipe(itemindex);
         Material recipeMaterial = Objects.requireNonNull(recipe.getAdjustedIngredient1()).getType();
@@ -83,7 +78,9 @@ public class EzVillagerTrade extends JavaPlugin implements Listener {
 
             if (event.getInventory().getHolder() instanceof Villager) {
                 Villager villager = (Villager) event.getInventory().getHolder();
-
+                if (villager.getVillagerLevel() < 5) {
+                    return;
+                }
                 Player player = (Player) event.getWhoClicked();
                 Location location = villager.getLocation();
                 PlayerInventory playerInventory = player.getInventory();
