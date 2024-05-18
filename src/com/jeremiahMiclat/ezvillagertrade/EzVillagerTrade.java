@@ -2,6 +2,7 @@ package com.jeremiahMiclat.ezvillagertrade;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -38,6 +39,11 @@ public class EzVillagerTrade extends JavaPlugin implements Listener {
     public void onInventoryClick(TradeSelectEvent event) {
         int itemindex = event.getIndex();
         Merchant merchant = event.getMerchant();
+        Villager villager = (Villager) event.getMerchant();
+        if (villager.getVillagerLevel() < 5) {
+            return;
+        }
+
         MerchantInventory merchantInventory = event.getInventory();
         MerchantRecipe recipe = merchant.getRecipe(itemindex);
         Material recipeMaterial = Objects.requireNonNull(recipe.getAdjustedIngredient1()).getType();
@@ -74,12 +80,16 @@ public class EzVillagerTrade extends JavaPlugin implements Listener {
 
         if (event.getCurrentItem().getType() == Material.EMERALD) {
             // Check if the clicked inventory belongs to a Villager
+
             if (event.getInventory().getHolder() instanceof Villager) {
+                Villager villager = (Villager) event.getInventory().getHolder();
+
                 Player player = (Player) event.getWhoClicked();
+                Location location = villager.getLocation();
                 PlayerInventory playerInventory = player.getInventory();
                 int emeraldCount = getItemCount(playerInventory, Material.EMERALD)
                         + getItemCount(event.getInventory(), Material.EMERALD);
-
+                InventoryView inventoryView = event.getView();
                 // Retrieve the trade data
                 TradeData tradeData = playerTradeData.get(player.getUniqueId());
 
@@ -97,18 +107,21 @@ public class EzVillagerTrade extends JavaPlugin implements Listener {
 
 
 
-//                    for (int i = 0; i < tradeData.tradeAvailable; i++) {
-//
-//                        ItemStack result = tradeData.merchantRecipe.getResult();
-//
-//                        player.getInventory().addItem(result);
-//
-//                    }
-
-                    playerInventory.addItem(emeraldForPlayer);
-                    playerInventory.addItem(ingredientForPlayer);
-
+                    for (int i = 0; i < tradeData.tradeAvailable; i++) {
+                        ItemStack result = tradeData.merchantRecipe.getResult();
+                        player.getInventory().addItem(result);
                         tradeData.merchantRecipe.setUses(tradeData.tradeAvailable);
+                        ExperienceOrb orb = location.getWorld().spawn(location, ExperienceOrb.class);
+                        orb.setExperience(tradeData.merchantRecipe.getVillagerExperience());
+//                        villager.setVillagerExperience(villager.getVillagerExperience()+tradeData.merchantRecipe.getVillagerExperience());
+//                        villager.setVillagerExperience(villager.getVillagerExperience() + 1);
+//                        villager.setVillagerExperience(villager.getVillagerExperience() - 1);
+                    }
+
+//                    playerInventory.addItem(emeraldForPlayer);
+                    playerInventory.addItem(ingredientForPlayer);
+                    inventoryView.close();
+
 
                 } else {
                     player.sendMessage("No trade data found.");
