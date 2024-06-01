@@ -14,6 +14,7 @@ import org.bukkit.event.inventory.TradeSelectEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.plugin.java.JavaPlugin;
+import java.util.Random;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -23,7 +24,7 @@ import java.util.Map;
 
 public class EzVillagerTrade extends JavaPlugin implements Listener {
     private final Map<UUID, TradeData> playerTradeData = new HashMap<>();
-
+    Random random = new Random();
     @Override
     public void onEnable() {
         getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "EzVillagerTrade Plugin Enabled");
@@ -82,17 +83,23 @@ public class EzVillagerTrade extends JavaPlugin implements Listener {
                     return;
                 }
                 Player player = (Player) event.getWhoClicked();
+                TradeData tradeData = playerTradeData.get(player.getUniqueId());
+
+
+
                 Location location = villager.getLocation();
                 PlayerInventory playerInventory = player.getInventory();
                 int emeraldCount = getItemCount(playerInventory, Material.EMERALD)
                         + getItemCount(event.getInventory(), Material.EMERALD);
                 InventoryView inventoryView = event.getView();
                 // Retrieve the trade data
-                TradeData tradeData = playerTradeData.get(player.getUniqueId());
+
 
                 if (tradeData != null) {
-                    player.sendMessage("You clicked on an emerald.");
-
+//                    player.sendMessage("You clicked on an emerald.");
+                    if (tradeData.tradeAvailable < 1) {
+                        return;
+                    }
                     int tradeTotalCost = tradeData.tradeAvailable;
                     int tradeIngredientCost = tradeData.ingredientCount * tradeData.tradeAvailable;
 
@@ -108,25 +115,37 @@ public class EzVillagerTrade extends JavaPlugin implements Listener {
                         ItemStack result = tradeData.merchantRecipe.getResult();
                         player.getInventory().addItem(result);
                         tradeData.merchantRecipe.setUses(tradeData.tradeAvailable);
-                        ExperienceOrb orb = location.getWorld().spawn(location, ExperienceOrb.class);
-                        orb.setExperience(tradeData.merchantRecipe.getVillagerExperience());
 //                        villager.setVillagerExperience(villager.getVillagerExperience()+tradeData.merchantRecipe.getVillagerExperience());
 //                        villager.setVillagerExperience(villager.getVillagerExperience() + 1);
 //                        villager.setVillagerExperience(villager.getVillagerExperience() - 1);
                     }
+                    ExperienceOrb orb = Objects.requireNonNull(location.getWorld()).spawn(location, ExperienceOrb.class);
+                    int randomExp = 3 + random.nextInt(4);
+                    orb.setExperience(randomExp*tradeData.tradeAvailable);
 
 //                    playerInventory.addItem(emeraldForPlayer);
-                    playerInventory.addItem(ingredientForPlayer);
+                    addItemsToInventory(playerInventory, ingredientForPlayer);
+//                    playerInventory.addItem(ingredientForPlayer);
                     inventoryView.close();
 
 
                 } else {
-                    player.sendMessage("No trade data found.");
+                    getServer().getConsoleSender().sendMessage(ChatColor.BLUE+"EzVillagerTrade log");
                 }
                 playerTradeData.remove(player.getUniqueId());
             }
         }
 
+    }
+
+    private void addItemsToInventory(PlayerInventory inventory, ItemStack items) {
+        int maxStackSize = items.getMaxStackSize();
+        while (items.getAmount() > 0) {
+            int toAdd = Math.min(items.getAmount(), maxStackSize);
+            ItemStack stackToAdd = new ItemStack(items.getType(), toAdd);
+            inventory.addItem(stackToAdd);
+            items.setAmount(items.getAmount() - toAdd);
+        }
     }
 
     private int getItemCount(Inventory inventory, Material material) {
